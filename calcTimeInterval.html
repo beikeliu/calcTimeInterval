@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>时间收益计算器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <style>
+        body {
+            background: linear-gradient(135deg, #ffe6f0 0%, #f0fff6 100%);
+            font-family: "PingFang SC", "微软雅黑", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 340px;
+            margin: 40px auto 0 auto;
+            background: #fff9fc;
+            border-radius: 18px;
+            box-shadow: 0 4px 18px #f3c6e2;
+            padding: 28px 18px 22px 18px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .header img {
+            width: 48px;
+            height: 48px;
+            vertical-align: middle;
+        }
+        .header h2 {
+            display: inline-block;
+            vertical-align: middle;
+            font-size: 22px;
+            color: #ff66a3;
+            font-weight: bold;
+            margin: 0 0 0 8px;
+            letter-spacing: 2px;
+        }
+        label {
+            font-size: 15px;
+            color: #ff66a3;
+            margin-top: 18px;
+            margin-bottom: 6px;
+            display: block;
+            font-weight: 500;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #ffe0f0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #fff;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, input[type="number"]:focus {
+            border-color: #ff66a3;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 12px 0;
+            background: linear-gradient(90deg, #ffb6e6 0%, #ff66a3 100%);
+            color: #fff;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px #f3c6e2;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+        button:active {
+            background: linear-gradient(90deg, #ff66a3 0%, #ffb6e6 100%);
+        }
+        .result {
+            margin-top: 22px;
+            font-size: 22px;
+            color: #ff66a3;
+            text-align: center;
+            font-weight: bold;
+        }
+        .note {
+            font-size: 13px;
+            color: #b38fc4;
+            margin-top: 10px;
+            text-align: center;
+        }
+        @media (max-width: 400px) {
+            .container { max-width: 96vw; padding: 18px 5vw 16px 5vw; }
+            .header h2 { font-size: 19px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>时间间隔计算器</h2>
+        </div>
+        <label for="timeInput">时间输入（8位数字）：</label>
+        <input type="text" id="timeInput" maxlength="8" placeholder="如：02001530">
+
+        <label for="dayInput">跨天数（如跨1天填1，默认0）：</label>
+        <input type="number" id="dayInput" min="0" value="0">
+
+        <label for="priceInput">单价（元/小时）：</label>
+        <input type="number" id="priceInput" min="0" step="0.1" value="30" placeholder="默认30元/小时">
+
+        <button onclick="calculate()">✨ 计算 ✨</button>
+        <div class="result" id="result"></div>
+        <div class="note">
+            前4位为起始时间（HHMM），后4位为结束时间（HHMM）<br>
+            支持跨天数（0或正整数）<br>
+            例：23000730 跨1天 = 8.5小时<br>
+        </div>
+    </div>
+    <script>
+        function calcTimeIntervalWithDays(input, crossDays = 0) {
+            if (!/^\d{8}$/.test(input)) {
+                return "❌ 输入格式错误，请输入8位数字，如01301300";
+            }
+            if (typeof crossDays !== "number" || crossDays < 0) {
+                return "❌ 跨天数必须为非负整数";
+            }
+
+            let startHour = parseInt(input.slice(0, 2), 10);
+            let startMinute = parseInt(input.slice(2, 4), 10);
+            let endHour = parseInt(input.slice(4, 6), 10);
+            let endMinute = parseInt(input.slice(6, 8), 10);
+
+            if (
+                startHour < 0 || startHour > 23 ||
+                startMinute < 0 || startMinute > 59 ||
+                endHour < 0 || endHour > 23 ||
+                endMinute < 0 || endMinute > 59
+            ) {
+                return "❌ 时间格式错误，小时需为00-23，分钟需为00-59";
+            }
+
+            let startTotalMinutes = startHour * 60 + startMinute;
+            let endTotalMinutes = endHour * 60 + endMinute;
+            let intervalMinutes = endTotalMinutes - startTotalMinutes + crossDays * 1440;
+
+            if (intervalMinutes < 0) {
+                return "❌ 参数错误，最终时间早于起始时间且跨天数不足";
+            }
+
+            let intervalHours = (intervalMinutes / 60).toFixed(1);
+            return `⏰ 间隔：${intervalHours} 小时`;
+        }
+
+        function calculate() {
+            const timeInput = document.getElementById('timeInput').value.trim();
+            const dayInput = parseInt(document.getElementById('dayInput').value, 10) || 0;
+            const pricePerHour = parseFloat(document.getElementById('priceInput').value) || 30;
+
+            const result = calcTimeIntervalWithDays(timeInput, dayInput);
+
+            // 如果计算成功，继续计算价格
+            if (!result.startsWith('❌')) {
+                // 提取小时数
+                const hoursMatch = result.match(/(\d+\.?\d*)\s*小时/);
+                if (hoursMatch) {
+                    const hours = parseFloat(hoursMatch[1]);
+
+                    // 计算普通价格
+                    const normalPrice = (hours * pricePerHour).toFixed(2);
+
+                    document.getElementById('result').innerHTML =
+                        `${result}<br>💰 预计收益：¥${normalPrice}`;
+                } else {
+                    document.getElementById('result').textContent = result;
+                }
+            } else {
+                document.getElementById('result').textContent = result;
+            }
+        }
+    </script>
+</body>
+</html>
